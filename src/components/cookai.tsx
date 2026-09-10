@@ -1,13 +1,15 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ChangeEvent, type ReactNode } from "react";
 import {
   ArrowLeft, ArrowRight, Bell, Bookmark, Camera, Check, ChefHat, ChevronDown,
-  Clock3, CookingPot, Flame, Heart, Home, Leaf, Menu, MessageCircle, Mic,
+  Clock3, CookingPot, Flame, Heart, Home, ImageIcon, Leaf, Menu, MessageCircle, Mic,
   MicOff, Search, Send, Settings, SlidersHorizontal, Sparkle, Star, ThumbsUp,
   Users, UtensilsCrossed, Video, VideoOff, WandSparkles, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Conversation, ConversationContent } from "@/components/ai-elements/conversation";
 import { Message, MessageContent } from "@/components/ai-elements/message";
 import { PromptInput, PromptInputFooter, PromptInputSubmit, PromptInputTextarea } from "@/components/ai-elements/prompt-input";
@@ -32,9 +34,9 @@ const pantryItems = [
 ] as const;
 
 function Brand() {
-  return <Link to="/" className="flex items-center gap-2.5" aria-label="CookAI home">
+  return <Link to="/" className="flex items-center gap-2.5" aria-label="RASOai home">
     <span className="grid size-9 place-items-center rounded-xl bg-primary text-primary-foreground"><ChefHat className="size-5" /></span>
-    <span><strong className="block font-display text-lg leading-none">CookAI</strong><small className="mt-1 block text-[9px] font-bold uppercase text-muted-foreground">Culinary AI</small></span>
+    <span><strong className="block font-display text-lg leading-none">RASOai</strong><small className="mt-1 block text-[9px] font-bold uppercase text-muted-foreground">Culinary AI</small></span>
   </Link>;
 }
 
@@ -111,8 +113,11 @@ function PageTitle({ eyebrow, title, action }: { eyebrow?: string; title: string
 }
 
 export function HomePage() {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState("");
+  const isMobile = useIsMobile();
+  const onFilePicked = (e: ChangeEvent<HTMLInputElement>) => setFile(e.target.files?.[0]?.name ?? "");
   const features = [
     [WandSparkles, "AI Recipe Match", "Personalized recipes built around what’s already in your kitchen."],
     [CookingPot, "Cooking Assistant", "Hands-free, real-time guidance that waits for your pace."],
@@ -125,10 +130,23 @@ export function HomePage() {
         <Chip><WandSparkles className="size-3" /> Intelligent culinary companion</Chip>
         <h1 className="mt-5 max-w-xl text-4xl font-extrabold leading-[1.05] sm:text-6xl">What’s in<br/><span className="border-b-4 border-warm">your kitchen?</span></h1>
         <p className="mt-4 max-w-xl text-base text-muted-foreground">Snap a photo, let our AI detect ingredients, find the perfect recipe, and get step-by-step guidance — all in one peaceful place.</p>
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0]?.name ?? "")} />
+        <input ref={galleryInputRef} type="file" accept="image/*" className="hidden" onChange={onFilePicked} />
+        <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFilePicked} />
         <div className="mt-6 grid min-h-56 place-items-center rounded-2xl border border-border bg-card p-6 text-center soft-shadow">
           <div><span className="mx-auto grid size-14 place-items-center rounded-full bg-secondary text-primary"><Camera /></span>
-            <Button className="mt-3 rounded-full" onClick={() => inputRef.current?.click()}><Camera /> {file ? "Choose another photo" : "Upload a photo"}</Button>
+            {isMobile ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="mt-3 rounded-full"><Camera /> {file ? "Choose another photo" : "Upload a photo"}</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center">
+                  <DropdownMenuItem onSelect={() => cameraInputRef.current?.click()}><Camera /> Take a photo</DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => galleryInputRef.current?.click()}><ImageIcon /> Choose from gallery</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button className="mt-3 rounded-full" onClick={() => galleryInputRef.current?.click()}><Camera /> {file ? "Choose another photo" : "Upload a photo"}</Button>
+            )}
             <p className="mt-2 text-xs text-muted-foreground">{file || "or drag and drop pantry items here"}</p>
             <div className="mt-5 flex flex-wrap justify-center gap-2"><span className="text-xs font-semibold">Try with:</span>{["🍅 Tomatoes", "🥚 Eggs", "🥬 Spinach", "🍗 Chicken"].map((x) => <Chip key={x}>{x}</Chip>)}</div>
           </div>
@@ -146,18 +164,18 @@ export function RecipesPage() {
   const [ingredients, setIngredients] = useState(["tomato", "egg", "spinach", "onion", "garlic"]);
   return <div className="mx-auto max-w-7xl space-y-8 gentle-in"><PageTitle eyebrow="Pantry scan · analysis complete" title="AI Recipe Discovery" />
     <div className="grid gap-5 xl:grid-cols-[1.35fr_.9fr]">
-      <section className="rounded-2xl bg-card p-5 soft-shadow"><h2 className="flex items-center gap-2 font-bold"><SlidersHorizontal className="size-5" /> Detected Ingredients</h2><div className="mt-4 grid gap-5 sm:grid-cols-[180px_1fr]"><img src={produce} alt="Detected pantry ingredients" width={1400} height={1000} className="aspect-[4/3] h-full w-full rounded-xl object-cover" /><div><p className="mb-3 text-xs text-muted-foreground">Tap to discard ingredients or refine detection:</p><div className="flex flex-wrap gap-2">{ingredients.map((x) => <Button key={x} variant="secondary" size="sm" className="rounded-full" onClick={() => setIngredients(ingredients.filter((i) => i !== x))}>{x}<X className="size-3" /></Button>)}<Button size="sm" variant="outline" className="rounded-full">+ Add more</Button></div><p className="mt-5 text-[11px] text-muted-foreground">CookAI cross-referenced 34 seasonal recipes with your pantry.</p></div></div></section>
+      <section className="rounded-2xl bg-card p-5 soft-shadow"><h2 className="flex items-center gap-2 font-bold"><SlidersHorizontal className="size-5" /> Detected Ingredients</h2><div className="mt-4 grid gap-5 sm:grid-cols-[180px_1fr]"><img src={produce} alt="Detected pantry ingredients" width={1400} height={1000} className="aspect-[4/3] h-full w-full rounded-xl object-cover" /><div><p className="mb-3 text-xs text-muted-foreground">Tap to discard ingredients or refine detection:</p><div className="flex flex-wrap gap-2">{ingredients.map((x) => <Button key={x} variant="secondary" size="sm" className="rounded-full" onClick={() => setIngredients(ingredients.filter((i) => i !== x))}>{x}<X className="size-3" /></Button>)}<Button size="sm" variant="outline" className="rounded-full">+ Add more</Button></div><p className="mt-5 text-[11px] text-muted-foreground">RASOai cross-referenced 34 seasonal recipes with your pantry.</p></div></div></section>
       <section className="rounded-2xl bg-card p-5 soft-shadow"><div className="flex justify-between"><h2 className="font-bold">Your Preferences</h2><Button variant="ghost" size="sm">Edit</Button></div><p className="mt-2 text-xs text-muted-foreground">Current constraints applied from your Kitchen Profile:</p><div className="mt-4 flex flex-wrap gap-2">{["🌱 Vegetarian", "⏱ Quick < 30 mins", "⚡ High Protein", "👍 Easy Skill Level"].map(x => <Chip key={x}>{x}</Chip>)}</div><div className="mt-5 flex items-center gap-3 rounded-xl bg-secondary p-3"><strong className="grid size-11 place-items-center rounded-full border-4 border-primary">88%</strong><span className="text-xs"><b className="block">Pantry compatibility</b>4 of 5 ingredients matched</span></div></section>
     </div>
     <section><PageTitle title="Top Recipe Recommendations" action={<div className="flex gap-2"><Chip><Check className="size-3" /> AI Verified</Chip><Button variant="outline" size="sm" className="rounded-full">Best Match <ChevronDown /></Button></div>} /><div className="mt-5 grid gap-5 md:grid-cols-3">{recipeData.map(r => <RecipeCard key={r.title} recipe={r} action />)}</div></section>
-    <div className="flex items-center gap-3 rounded-2xl bg-card p-4 soft-shadow"><MessageCircle className="size-5" /><div className="hidden sm:block"><p className="text-xs font-bold">Want to tweak these suggestions?</p><p className="text-[11px] text-muted-foreground">Ask CookAI to replace an ingredient or limit prep equipment.</p></div><input className="ml-auto min-w-0 flex-1 rounded-full bg-secondary px-4 py-2 text-xs outline-none sm:max-w-sm" placeholder="e.g. Make it dairy-free…"/><Button size="icon" className="rounded-full" aria-label="Send request"><ArrowRight /></Button></div>
+    <div className="flex items-center gap-3 rounded-2xl bg-card p-4 soft-shadow"><MessageCircle className="size-5" /><div className="hidden sm:block"><p className="text-xs font-bold">Want to tweak these suggestions?</p><p className="text-[11px] text-muted-foreground">Ask RASOai to replace an ingredient or limit prep equipment.</p></div><input className="ml-auto min-w-0 flex-1 rounded-full bg-secondary px-4 py-2 text-xs outline-none sm:max-w-sm" placeholder="e.g. Make it dairy-free…"/><Button size="icon" className="rounded-full" aria-label="Send request"><ArrowRight /></Button></div>
   </div>;
 }
 
 function AssistantChat() {
   const [messages, setMessages] = useState([{ role: "user", text: "I’m not sure how finely to chop the cucumber. Can you help?" }, { role: "assistant", text: "For this recipe, chop the cucumber into small bite-sized pieces — about 1 cm. Keeping the pieces roughly the same size helps every bite stay fresh and crunchy." }]);
   return <section className="flex min-h-[620px] flex-col rounded-2xl bg-card soft-shadow"><div className="flex items-center gap-3 border-b border-border p-5"><span className="grid size-10 place-items-center rounded-full bg-secondary"><ChefHat /></span><div><h2 className="font-bold">AI Sous Chef</h2><p className="text-[11px] text-muted-foreground">Context: Mediterranean Veggie Bowl · Step 3</p></div></div>
-    <Conversation className="min-h-0"><ConversationContent className="gap-5 p-5">{messages.map((m,i) => <Message key={i} from={m.role as "user" | "assistant"}><MessageContent className={m.role === "user" ? "bg-primary text-primary-foreground" : ""}>{m.role === "assistant" && <span className="mb-1 flex items-center gap-1 text-xs font-bold text-primary"><Sparkle className="size-3" /> CookAI</span>}<p className="leading-relaxed">{m.text}</p></MessageContent></Message>)}</ConversationContent></Conversation>
+    <Conversation className="min-h-0"><ConversationContent className="gap-5 p-5">{messages.map((m,i) => <Message key={i} from={m.role as "user" | "assistant"}><MessageContent className={m.role === "user" ? "bg-primary text-primary-foreground" : ""}>{m.role === "assistant" && <span className="mb-1 flex items-center gap-1 text-xs font-bold text-primary"><Sparkle className="size-3" /> RASOai</span>}<p className="leading-relaxed">{m.text}</p></MessageContent></Message>)}</ConversationContent></Conversation>
     <div className="p-4"><div className="mb-3 flex flex-wrap gap-2">{["What can I substitute?", "Next step", "Tips for better flavour"].map(x => <Button key={x} size="sm" variant="secondary" className="rounded-full" onClick={() => setMessages([...messages, {role:"user", text:x}])}>{x}</Button>)}</div><PromptInput onSubmit={({text}) => { if (text.trim()) setMessages([...messages, {role:"user",text:text.trim()}, {role:"assistant",text:"I’m right here with you. For this step, keep the pieces even and taste as you go."}]); }} className="rounded-2xl"><PromptInputTextarea placeholder="Ask anything about this step…" className="min-h-14" /><PromptInputFooter className="justify-end"><PromptInputSubmit /></PromptInputFooter></PromptInput></div>
   </section>;
 }

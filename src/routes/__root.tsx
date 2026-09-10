@@ -74,10 +74,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "CookAI — Cook brilliantly with what you have" },
+      { title: "RASOai — Cook brilliantly with what you have" },
       { name: "description", content: "Discover recipes from your pantry and cook with thoughtful AI guidance." },
-      { name: "author", content: "CookAI" },
-      { property: "og:title", content: "CookAI" },
+      { name: "author", content: "RASOai" },
+      { property: "og:title", content: "RASOai" },
       { property: "og:description", content: "Discover recipes from your pantry and cook with thoughtful AI guidance." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
